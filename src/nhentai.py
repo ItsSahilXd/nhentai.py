@@ -76,6 +76,9 @@ class Doujinshi():
 			return getattr(self, key)
 		raise AttributeError
 		
+	def __repr__(self):
+		return 'doujin:' + str(self.magic)
+		
 def _get(endpoint:str):
 	return _soup(session.get(endpoint).text, 'lxml')
 	
