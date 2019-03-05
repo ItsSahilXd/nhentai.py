@@ -1,4 +1,4 @@
-# nhentai-api-wrapper
+# nhentai api wrapper
 
 gallery query
 ```
