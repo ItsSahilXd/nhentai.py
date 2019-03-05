@@ -1,6 +1,6 @@
 # nhentai api wrapper
 
-gallery query
+search query (tag, page number)
 ```
 >>> results = [d for d in nhentai.search("yuri", 2)]
 >>> results
