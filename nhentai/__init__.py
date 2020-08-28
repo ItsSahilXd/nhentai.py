@@ -1,1 +1,1 @@
-from .nhentai import nhentai
+from .nhentai import *
