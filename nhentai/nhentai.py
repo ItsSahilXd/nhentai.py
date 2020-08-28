@@ -59,14 +59,14 @@ class nhentai():
 	
 	@staticmethod
 	def search(query:str, page:int=1, sort_by:str="date") -> List[Doujin]:
-		"""Search doujins by keyword.
+		"""
+		sSearch doujins by keyword.
 
 		:param str query: Search term. (https://nhentai.net/info/)
 		:param int page: Page number. Defaults to 1.
 		:param str sort_by: Method to sort search results by (popular/date). Defaults to date.
 
-		:returns: Search results parsed into a list of nHentaiDoujin objects
-		:rtype: list[Doujin]
+		:returns list[Doujin]: Search results parsed into a list of nHentaiDoujin objects
 		"""
 		galleries = nhentai._get('galleries/search', {"query" : query, "page" : page, "sort" : sort_by})["result"]
 		results = []
@@ -76,14 +76,14 @@ class nhentai():
 
 	@staticmethod
 	def search_tagged(tag_id:int, page:int=1, sort_by:str="date") -> List[Doujin]:
-		"""Search doujins by tag id.
+		"""
+		Search doujins by tag id.
 
 		:param int tag_id: Tag id to use.
 		:param int page: Page number. Defaults to 1.
 		:param str sort_by: Method to sort search results by (popular/date). Defaults to date.
 
-		:returns: Search results parsed into a list of nHentaiDoujin objects
-		:rtype: list[Doujin]
+		:returns list[Doujin]: Search results parsed into a list of nHentaiDoujin objects
 		"""
 		try:
 			galleries = nhentai._get('galleries/tagged', {"tag_id" : tag_id, "page" : page, "sort" : sort_by})["result"]
@@ -97,12 +97,12 @@ class nhentai():
 
 	@staticmethod
 	def get_homepage(page:int=1) -> List[Doujin]:
-		"""Get recently uploaded doujins from the homepage.
+		"""
+		Get recently uploaded doujins from the homepage.
 
 		:param int page: Page number. Defaults to 1.
 
-		:returns: Search results parsed into a list of nHentaiDoujin objects
-		:rtype: list[Doujin]
+		:returns list[Doujin]: Search results parsed into a list of nHentaiDoujin objects
 		"""
 		results = []
 		for d in nhentai._get('galleries/all', {"page" : page})["result"]:
@@ -111,15 +111,25 @@ class nhentai():
 
 	@staticmethod
 	def get_doujin(id:int) -> Doujin:
-		"""Get a doujin by its id.
+		"""
+		Get a doujin by its id.
 
 		:param int id: A doujin's id.
 
 		:rtype: Doujin
-		
 		"""
 		try:
 			return Doujin(nhentai._get('gallery/%d' % id))
 		except KeyError:
 			raise ValueError("A doujin with the given id wasn't found")
+
+	@staticmethod
+	def get_random_id() -> int:
+		"""
+		Get an id of a random doujin.
+
+		:returns int: A random existing doujin id.
+		"""
+		redirect = nhentai._SESSION.head("https://nhentai.net/random/").headers["Location"]
+		return int(redirect[3:-1])
 
