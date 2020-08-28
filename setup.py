@@ -5,12 +5,11 @@ with open('README.md', encoding='utf-8') as f:
 
 setup(
 	name="nhentai.py",
-	version="1.0.2",
-	packages=['nhentai'],
+	version="2",
 	author="moka",
-	description='an nhentai api wrapper (using beautifulsoup)',
+	description='an nhentai api wrapper.',
 	long_description=long_description,
 	long_description_content_type='text/markdown',
 	url='https://github.com/moe-ka/nhentai.py',
-	include_package_data=True
+	packages=find_packages(),
 )

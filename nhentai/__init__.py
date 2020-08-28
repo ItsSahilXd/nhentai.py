@@ -1,2 +1,1 @@
-__name__ = "nhentai"
-from .nhentai import *
+from .nhentai import nhentai

@@ -1,88 +1,127 @@
-from bs4 import BeautifulSoup as _soup
-from urllib.parse import quote
-from errors import *
-import requests, json
+from collections import namedtuple
+from typing import List
+from enum import Enum
+import requests
 
-SEARCH_URL = "http://nhentai.net/search?q={}&page={}"
-IMAGE_URL = "https://i.nhentai.net/galleries/{}/{}"
-DOUJIN_URL = "https://nhentai.net/g/{}"
+from . import errors
 
-session = requests.Session()
+_TYPE_TO_EXTENSION = { 
+	'j' : 'jpg',
+	'p' : 'png',
+	'g' : 'gif'
+}
 
-class Doujinshi():
+class Doujin():
 	"""
-	.name = primary/english name
-	.jname = secondary/non english name
-	.tags = a list of numerical tags
-	.magic = magic number/id
-	.cover = cover(thumbnail)
-	.gid = /galleries/ id for page lookup
-	.pages = number of pages
-	"""
-	def __init__(self, arg):
-		self._images = []
-		self.fetched = False
-		if type(arg) is int:
-			self.init_from_id(arg)
-		else:
-			self.init_from_div(arg)
+	Class representing a doujin.
 
-	def init_from_div(self, res):
-		self.name = res.div.text
-		self.magic = int(res.a['href'][3:-1:])
-		self._set_cover(res)
-			
-	def init_from_id(self, magic):
-		res = _get(DOUJIN_URL.format(magic))
-		if res(class_='container error'):
-			raise DoujinshiNotFound()
-		self.magic = magic
-		self._set_cover(res.find(id='cover'))
-		self.fetch(res) # since res was already requested
-		self.name = res.find(id='info').h1.text
-		
-	def _set_cover(self, res):
+	:ivar int id:			Doujin id.
+	:ivar dict titles:		Doujin titles (language:title).
+	:ivar Doujin.Tag tags:	Doujin tag list.
+	:ivar str cover:		Doujin cover image url.
+	:ivar str thumbnail:	Doujin thumbnail image url.
+	"""
+	Tag = namedtuple("Tag", ["id", "type", "name", "url", "count"])
+
+	def __init__(self, data):
+		self.id = data["id"]
+		self.media_id = data["media_id"]
+		self.titles = data["title"]
+		images = data["images"]
+
+		self.pages = [Doujin.Page(self.media_id, num, **_) for num, _ in enumerate(images["pages"], start=1)]
+		self.tags = [Doujin.Tag(**_) for _ in data["tags"]]
+
+		thumb_ext = _TYPE_TO_EXTENSION[images["thumbnail"]["t"]]
+		self.thumbnail = f"https://t.nhentai.net/galleries/{self.media_id}/thumb.{thumb_ext}"
+
+		cover_ext = _TYPE_TO_EXTENSION[images["cover"]["t"]]
+		self.cover = f"https://t.nhentai.net/galleries/{self.media_id}/cover.{cover_ext}"
+
+	def __getitem__(self, key:int):
+		"""
+		Returns a page by index.
+
+		:rtype: Doujin.Page 
+		"""
+		return self.pages[key]
+
+	class Page():
+		def __init__(self, media_id:int, num:int, t:str, w:int, h:int):
+			self.width = w
+			self.height = h
+			self.url = f"https://i.nhentai.net/galleries/{media_id}/{num}.{_TYPE_TO_EXTENSION[t]}"
+
+class nhentai():
+	_SESSION = requests.Session()
+
+	@staticmethod
+	def _get(endpoint, params={}):
+		return nhentai._SESSION.get("https://nhentai.net/api/" + endpoint, params=params).json()
+	
+	@staticmethod
+	def search(query:str, page:int=1, sort_by:str="date") -> List[Doujin]:
+		"""Search doujins by keyword.
+
+		:param str query: Search term. (https://nhentai.net/info/)
+		:param int page: Page number. Defaults to 1.
+		:param str sort_by: Method to sort search results by (popular/date). Defaults to date.
+
+		:returns: Search results parsed into a list of nHentaiDoujin objects
+		:rtype: list[Doujin]
+		"""
+		galleries = nhentai._get('galleries/search', {"query" : query, "page" : page, "sort" : sort_by})["result"]
+		results = []
+		for d in galleries:
+			results.append(Doujin(d))
+		return results
+
+	@staticmethod
+	def search_tagged(tag_id:int, page:int=1, sort_by:str="date") -> List[Doujin]:
+		"""Search doujins by tag id.
+
+		:param int tag_id: Tag id to use.
+		:param int page: Page number. Defaults to 1.
+		:param str sort_by: Method to sort search results by (popular/date). Defaults to date.
+
+		:returns: Search results parsed into a list of nHentaiDoujin objects
+		:rtype: list[Doujin]
+		"""
 		try:
-			self.cover = res.img['data-src']
-		except:
-			self.cover = 'https:' + res.img['src']
-		self.gid = int(self.cover.rsplit('/', 2)[-2])
-	
-	def fetch(self, res=None):
-		if not res:
-			res = _get(DOUJIN_URL.format(self.magic))
-		# add pages
-		for url in res(class_='gallerythumb'):
-			url = url.noscript.img['src'].rsplit('/', 1)[-1]
-			self._images.append(IMAGE_URL.format(self.gid, url.replace('t', '')))
-		# set info (jname, pages, tags)
-		res = res.find(id='info')
-		self.jname = res.h2.text if res.h2 else None
-		self.pages = len(self._images)
-		self.tags = []
-		for tag in res('a', class_='tag'):
-			tag = tag.text.rsplit(' ', 1)[:-1:]
-			self.tags.append(' '.join(tag))
-		self.fetched = True
+			galleries = nhentai._get('galleries/tagged', {"tag_id" : tag_id, "page" : page, "sort" : sort_by})["result"]
+		except KeyError:
+			raise ValueError("There's no tag with the given tag_id.")
 		
-	def __getitem__(self, key):
-		if not self.fetched:
-			self.fetch()
-		return self._images[key]
+		results = []
+		for d in galleries:
+			results.append(Doujin(d))
+		return results
+
+	@staticmethod
+	def get_homepage(page:int=1) -> List[Doujin]:
+		"""Get recently uploaded doujins from the homepage.
+
+		:param int page: Page number. Defaults to 1.
+
+		:returns: Search results parsed into a list of nHentaiDoujin objects
+		:rtype: list[Doujin]
+		"""
+		results = []
+		for d in nhentai._get('galleries/all', {"page" : page})["result"]:
+			results.append(Doujin(d))
+		return results
+
+	@staticmethod
+	def get_doujin(id:int) -> Doujin:
+		"""Get a doujin by its id.
+
+		:param int id: A doujin's id.
+
+		:rtype: Doujin
 		
-	def __getattr__(self, key):
-		if key == 'jname' or key == 'pages' or key == 'tags':
-			self.fetch()
-			return getattr(self, key)
-		raise AttributeError
-		
-	def __repr__(self):
-		return 'doujin:' + str(self.magic)
-		
-def _get(endpoint:str):
-	return _soup(session.get(endpoint).text, 'lxml')
-	
-def search(query:str, page:int=1):
-	res = _get(SEARCH_URL.format(quote(query), page))
-	for div in res(class_='gallery'):
-		yield Doujinshi(div)
+		"""
+		try:
+			return Doujin(nhentai._get('gallery/%d' % id))
+		except KeyError:
+			raise ValueError("A doujin with the given id wasn't found")
+
