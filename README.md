@@ -4,7 +4,7 @@
 
 `nhentai.get_doujin(id:int) -> Doujin`
 <br>
-Get a doujin by its /g/id.
+Returns a doujin by given /g/id.
 <br>
 
 `nhentai.get_random_id() -> int`
@@ -14,7 +14,7 @@ Returns a random and valid /g/id.
 
 `nhentai.get_homepage(page:int) -> List[Doujin]`
 <br>
-Get the list of the most recently uploaded doujins on the homepage.
+Returns a list of the most recently uploaded doujins on the homepage.
 <br>
 
 `nhentai.search(query:str, page:int, sort_by:str) -> List[Doujin]` <br>
