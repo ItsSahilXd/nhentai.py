@@ -3,8 +3,6 @@ from typing import List
 from enum import Enum
 import requests
 
-from . import errors
-
 _TYPE_TO_EXTENSION = { 
 	'j' : 'jpg',
 	'p' : 'png',
