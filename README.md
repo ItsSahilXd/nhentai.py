@@ -13,16 +13,16 @@ Get the list of the most recently uploaded doujins on the homepage.
 <br>
 
 `nhentai.search(query:str, page:int, sort_by:str)` <br>
-Looks for doujins related to a given [keyword](https://nhentai.net/info/).
+Returns a list of doujins related to a given [keyword](https://nhentai.net/info/).
 
 `nhentai.search_tagged(tag_id:int, page:int, sort_by:str)`<br>
-Looks for doujins that have the given tag id.
+Returns a list of doujins that have the given tag id.
 <br>
 <br>
 
 
 ## Examples
-### Getting doujin by an id
+### Getting doujin using a /g/id
 ```
 >>> d = nhentai.get_doujin(123)
 >>>
