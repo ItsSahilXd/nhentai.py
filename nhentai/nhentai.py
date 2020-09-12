@@ -20,6 +20,7 @@ class Doujin():
 	:ivar str thumbnail:	Doujin thumbnail image url.
 	"""
 	Tag = namedtuple("Tag", ["id", "type", "name", "url", "count"])
+	Pages = namedtuple("Page", ["url", "width", "height"])
 
 	def __init__(self, data):
 		self.id = data["id"]
@@ -27,7 +28,7 @@ class Doujin():
 		self.titles = data["title"]
 		images = data["images"]
 
-		self.pages = [Doujin.Page(self.media_id, num, **_) for num, _ in enumerate(images["pages"], start=1)]
+		self.pages = [Doujin.__makepage__(self.media_id, num, **_) for num, _ in enumerate(images["pages"], start=1)]
 		self.tags = [Doujin.Tag(**_) for _ in data["tags"]]
 
 		thumb_ext = _TYPE_TO_EXTENSION[images["thumbnail"]["t"]]
@@ -44,11 +45,9 @@ class Doujin():
 		"""
 		return self.pages[key]
 
-	class Page():
-		def __init__(self, media_id:int, num:int, t:str, w:int, h:int):
-			self.width = w
-			self.height = h
-			self.url = f"https://i.nhentai.net/galleries/{media_id}/{num}.{_TYPE_TO_EXTENSION[t]}"
+	def __makepage__(media_id: int, num: int, t:str, w:int, h: int):
+		return Doujin.Pages(f"https://i.nhentai.net/galleries/{media_id}/{num}.{_TYPE_TO_EXTENSION[t]}",
+			w, h)
 
 _SESSION = requests.Session()
 
