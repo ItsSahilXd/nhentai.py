@@ -25,6 +25,7 @@ class Doujin():
 		self.id = data["id"]
 		self.media_id = data["media_id"]
 		self.titles = data["title"]
+		self.favourites = data["num_favorites"]
 		images = data["images"]
 
 		self.pages = [Doujin.Page(self.media_id, num, **_) for num, _ in enumerate(images["pages"], start=1)]
