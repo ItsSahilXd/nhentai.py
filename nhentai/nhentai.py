@@ -1,6 +1,6 @@
 from collections import namedtuple
+from urllib.parse import urljoin
 from typing import List
-from enum import Enum
 import requests
 
 _TYPE_TO_EXTENSION = { 
@@ -27,6 +27,7 @@ class Doujin():
 		self.media_id = data["media_id"]
 		self.titles = data["title"]
 		self.favourites = data["num_favorites"]
+		self.url = "https://nhentai.net/g/%d" % self.id
 		images = data["images"]
 
 		self.pages = [Doujin.__makepage__(self.media_id, num, **_) for num, _ in enumerate(images["pages"], start=1)]
@@ -53,7 +54,7 @@ class Doujin():
 _SESSION = requests.Session()
 
 def _get(endpoint, params={}):
-	return _SESSION.get("https://nhentai.net/api/" + endpoint, params=params).json()
+	return _SESSION.get(urljoin("https://nhentai.net/api/", endpoint), params=params).json()
 
 def search(query:str, page:int=1, sort_by:str="date") -> List[Doujin]:
 	"""
@@ -125,4 +126,3 @@ def get_random_id() -> int:
 	"""
 	redirect = _SESSION.head("https://nhentai.net/random/").headers["Location"]
 	return int(redirect[3:-1])
-

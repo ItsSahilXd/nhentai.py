@@ -5,7 +5,7 @@ with open('README.md', encoding='utf-8') as f:
 
 setup(
 	name="nhentai.py",
-	version="2.2.0",
+	version="2.2.1",
 	author="moka",
 	description='an nhentai api wrapper.',
 	long_description=long_description,
