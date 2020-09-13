@@ -1,13 +1,16 @@
 from collections import namedtuple
-from urllib.parse import urljoin
+from enum import Enum, unique
 from typing import List
+from urllib.parse import urljoin
+
 import requests
 
-_TYPE_TO_EXTENSION = { 
-	'j' : 'jpg',
-	'p' : 'png',
-	'g' : 'gif'
-}
+
+@unique
+class Extension(Enum):
+    JPG = 'j'
+    PNG = 'p'
+    GIF = 'g'
 
 class Doujin():
 	"""
@@ -26,17 +29,17 @@ class Doujin():
 		self.id = data["id"]
 		self.media_id = data["media_id"]
 		self.titles = data["title"]
-		self.favourites = data["num_favorites"]
-		self.url = "https://nhentai.net/g/%d" % self.id
+		self.favorites = data["num_favorites"]
+		self.url = f"https://nhentai.net/g/{self.id}"
 		images = data["images"]
 
 		self.pages = [Doujin.__makepage__(self.media_id, num, **_) for num, _ in enumerate(images["pages"], start=1)]
 		self.tags = [Doujin.Tag(**_) for _ in data["tags"]]
 
-		thumb_ext = _TYPE_TO_EXTENSION[images["thumbnail"]["t"]]
+		thumb_ext = Extension(images["thumbnail"]["t"]).name.lower()
 		self.thumbnail = f"https://t.nhentai.net/galleries/{self.media_id}/thumb.{thumb_ext}"
 
-		cover_ext = _TYPE_TO_EXTENSION[images["cover"]["t"]]
+		cover_ext = Extension(images["cover"]["t"]).name.lower()
 		self.cover = f"https://t.nhentai.net/galleries/{self.media_id}/cover.{cover_ext}"
 
 	def __getitem__(self, key:int):
@@ -48,12 +51,12 @@ class Doujin():
 		return self.pages[key]
 
 	def __makepage__(media_id: int, num: int, t:str, w:int, h: int):
-		return Doujin.Pages(f"https://i.nhentai.net/galleries/{media_id}/{num}.{_TYPE_TO_EXTENSION[t]}",
+		return Doujin.Pages(f"https://i.nhentai.net/galleries/{media_id}/{num}.{Extension(t).name.lower()}",
 			w, h)
 
 _SESSION = requests.Session()
 
-def _get(endpoint, params={}):
+def _get(endpoint, params={}) -> dict:
 	return _SESSION.get(urljoin("https://nhentai.net/api/", endpoint), params=params).json()
 
 def search(query:str, page:int=1, sort_by:str="date") -> List[Doujin]:
@@ -67,10 +70,7 @@ def search(query:str, page:int=1, sort_by:str="date") -> List[Doujin]:
 	:returns list[Doujin]: Search results parsed into a list of nHentaiDoujin objects
 	"""
 	galleries = _get('galleries/search', {"query" : query, "page" : page, "sort" : sort_by})["result"]
-	results = []
-	for d in galleries:
-		results.append(Doujin(d))
-	return results
+	return [Doujin(search_result) for search_result in galleries]
 
 def search_tagged(tag_id:int, page:int=1, sort_by:str="date") -> List[Doujin]:
 	"""
@@ -87,10 +87,7 @@ def search_tagged(tag_id:int, page:int=1, sort_by:str="date") -> List[Doujin]:
 	except KeyError:
 		raise ValueError("There's no tag with the given tag_id.")
 	
-	results = []
-	for d in galleries:
-		results.append(Doujin(d))
-	return results
+	return [Doujin(search_result) for search_result in galleries]
 
 def get_homepage(page:int=1) -> List[Doujin]:
 	"""
@@ -100,10 +97,7 @@ def get_homepage(page:int=1) -> List[Doujin]:
 
 	:returns list[Doujin]: Search results parsed into a list of nHentaiDoujin objects
 	"""
-	results = []
-	for d in _get('galleries/all', {"page" : page})["result"]:
-		results.append(Doujin(d))
-	return results
+	return [Doujin(recent) for recent in _get('galleries/all', {"page" : page})["result"]]
 
 def get_doujin(id:int) -> Doujin:
 	"""
@@ -114,7 +108,7 @@ def get_doujin(id:int) -> Doujin:
 	:rtype: Doujin
 	"""
 	try:
-		return Doujin(_get('gallery/%d' % id))
+		return Doujin(_get(f"gallery/{id}"))
 	except KeyError:
 		raise ValueError("A doujin with the given id wasn't found")
 
