@@ -26,15 +26,15 @@ class Doujin():
 	Pages = namedtuple("Page", ["url", "width", "height"])
 
 	def __init__(self, data):
-		self.id = data["id"]
-		self.media_id = data["media_id"]
+		self.id = int(data["id"])
+		self.media_id = int(data["media_id"])
 		self.titles = data["title"]
-		self.favorites = data["num_favorites"]
+		self.favorites = int(data["num_favorites"])
 		self.url = f"https://nhentai.net/g/{self.id}"
 		images = data["images"]
 
 		self.pages = [Doujin.__makepage__(self.media_id, num, **_) for num, _ in enumerate(images["pages"], start=1)]
-		self.tags = [Doujin.Tag(**_) for _ in data["tags"]]
+		self.tags = [Doujin.__maketag__(tag_data) for tag_data in data["tags"]]
 
 		thumb_ext = Extension(images["thumbnail"]["t"]).name.lower()
 		self.thumbnail = f"https://t.nhentai.net/galleries/{self.media_id}/thumb.{thumb_ext}"
@@ -50,9 +50,21 @@ class Doujin():
 		"""
 		return self.pages[key]
 
+	def __maketag__(tag_data: dict):
+		return Doujin.Tag(
+			id=int(tag_data['id']),
+			type=tag_data['type'],
+			name=tag_data['name'],
+			url=tag_data['url'],
+			count=int(tag_data['count'])
+		)
+
 	def __makepage__(media_id: int, num: int, t:str, w:int, h: int):
-		return Doujin.Pages(f"https://i.nhentai.net/galleries/{media_id}/{num}.{Extension(t).name.lower()}",
-			w, h)
+		return Doujin.Pages(
+      		f"https://i.nhentai.net/galleries/{media_id}/{num}.{Extension(t).name.lower()}",
+			int(w),
+   			int(h)
+    )
 
 _SESSION = requests.Session()
 
